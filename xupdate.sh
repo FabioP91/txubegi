@@ -540,7 +540,7 @@ echo -e "${GR}  Fuse...${NC}"
 xinstall fuse
 modprobe fuse
 groupadd fuse
-usermod -G fuse "$XUSER"
+usermod -aG fuse "$XUSER"
 
 # ------------------------------------------------------------------------------
 # Devilspie allows setting application wm defaults
