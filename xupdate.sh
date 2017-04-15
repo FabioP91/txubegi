@@ -613,10 +613,10 @@ xinstall gnome-disk-utility
 xinstall searchmonkey
 xinstall bleachbit 
 xinstall gtk2-engines 
-xinstall numlockx
+#xinstall numlockx
 xinstall deja-dup
 xinstall inxi
-xinstall keepassx
+#xinstall keepassx
 xinstall cowsay
 
 # ------------------------------------------------------------------------------
