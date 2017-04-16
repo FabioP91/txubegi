@@ -62,24 +62,6 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# TEST INTERNET CONNECTION
-
-echo -e "${GR}Testing internet connection...${NC}"
-wget -q --tries=10 --timeout=20 --spider http://google.com
-if [[ ! $? -eq 0 ]]; then
-  echo -e "${RD}This script requires an internet connection, exiting.${NC}"
-  exit 1
-fi
-
-# ------------------------------------------------------------------------------
-# RAM TEST
-
-MEM=$(free -g | grep "Mem:" | tr -s ' ' | cut -d ' ' -f2)
-if ((MEM < 2)); then
-  echo "${RD}Insufficient RAM, exiting.${NC}"
-fi
-
-# ------------------------------------------------------------------------------
 # FIND USER AND GROUP THAT RAN su or sudo su
 
 XUSER=$(logname)
@@ -101,12 +83,6 @@ export DEBIAN_FRONTEND=noninteractive
 LAPTOP=$(laptop-detect; echo -e  $?)
 
 # ------------------------------------------------------------------------------
-# GET IP AND IS COUNTRY FRANCE
-
-#IP=$(wget -qO- checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//')
-#FR=$(wget -qO- "ipinfo.io/$IP" | grep -c '"country": "FR"')
-
-# ------------------------------------------------------------------------------
 # Installation functions
 # use apt-get and not apt in shell scripts
 
@@ -117,38 +93,6 @@ xinstall () {
 xremove () {
   echo -e "${BL}   removing $1 ${NC}"
   apt-get purge -q -y "$1" >> xupdate.log 2>&1 || echo -e "${RD}$1 not removed${NC}"
-}
-
-# ------------------------------------------------------------------------------
-# XPI functions for installing firefox extensions
-
-EXTENSIONS_SYSTEM='/usr/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/'
-#EXTENSIONS_USER=$(echo "/home/$XUSER/.mozilla/firefox/*.default/extensions/")
-
-get_addon_id_from_xpi () { #path to .xpi file
-  addon_id_line=$(unzip -p "$1" install.rdf | egrep '<em:id>' -m 1)
-  addon_id=$(echo "$addon_id_line" | sed "s/.*>\(.*\)<.*/\1/")
-  echo "$addon_id"
-}
-
-get_addon_name_from_xpi () { #path to .xpi file
-  addon_name_line=$(unzip -p "$1" install.rdf | egrep '<em:name>' -m 1)
-  addon_name=$(echo "$addon_name_line" | sed "s/.*>\(.*\)<.*/\1/")
-  echo "$addon_name"
-}
-
-install_addon () {
-  xpi="${PWD}/${1}"
-  extensions_path=$2
-  new_filename=$(get_addon_id_from_xpi "$xpi").xpi
-  new_filepath="${extensions_path}${new_filename}"
-  addon_name=$(get_addon_name_from_xpi "$xpi")
-  if [ -f "$new_filepath" ]; then
-    echo "File already exists: $new_filepath"
-    echo "Skipping installation for addon $addon_name."
-  else
-    cp "$xpi" "$new_filepath"
-  fi
 }
 
 # ------------------------------------------------------------------------------
@@ -313,6 +257,16 @@ if [ "$INSTSPOTIFY" == "1" ]; then
   gpg --export --armor BBEBDCB318AD50EC6865090613B00F1FD2C19886 | apt-key add - 
   echo "deb http://repository.spotify.com stable non-free"  > /etc/apt/sources.list.d/spotify.list
 fi
+
+echo -e "${BL}     Flux repository...${NC}"
+add-apt-repository ppa:nathan-renniewaldock/flux -y >> xupdate.log 2>&1 & spinner $!
+
+echo -e "${BL}     MariaDB repository...${NC}"
+apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+add-apt-repository -y 'deb [arch=amd64,i386,ppc64el] http://mirrors.coreix.net/mariadb/repo/10.1/ubuntu xenial main'
+
+echo -e "${BL}     Terminix repository...${NC}"
+add-apt-repository ppa:webupd8team/terminix -y >> xupdate.log 2>&1 & spinner $!
 
 # ------------------------------------------------------------------------------
 # REMOVE
@@ -618,6 +572,8 @@ xinstall deja-dup
 xinstall inxi
 #xinstall keepassx
 xinstall cowsay
+xinstall htop
+xinstall nano
 
 # ------------------------------------------------------------------------------
 # Compression
@@ -642,7 +598,39 @@ xinstall file-roller
 echo -e "${GR}  Printing...${NC}"
 
 xinstall cups-pdf 
-xinstall hplip-gui 
+
+# ------------------------------------------------------------------------------
+# Development Dependencies
+
+echo -e "${GR}  Development Dependencies...${NC}"
+
+xinstall git
+xinstall curl
+xinstall zlib1g-dev
+xinstall build-essential
+xinstall libssl-dev
+xinstall libreadline-dev
+xinstall libyaml-dev
+xinstall libsqlite3-dev
+xinstall sqlite3
+xinstall libxml2-dev
+xinstall libxslt1-dev
+xinstall libcurl4-openssl-dev
+xinstall vim
+xinstall tcl8.5
+xinstall openssl
+xinstall zlib1g
+xinstall libsasl2-dev
+xinstall libncurses5-dev
+xinstall python
+xinstall libxslt-dev
+xinstall apt-transport-https
+xinstall software-properties-common
+xinstall python-software-properties
+xinstall libgmp-dev
+xinstall imagemagick
+xinstall libmagickwand-dev
+xinstall nodejs
 
 # ------------------------------------------------------------------------------
 # ACCESSORIES
@@ -654,18 +642,12 @@ xinstall gedit-plugins
 xinstall gedit-developer-plugins  
 xinstall deja-dup 
 xinstall xpdf
-xinstall rednotebook 
-xinstall calibre 
-xinstall scribus 
 xinstall brasero 
-xinstall typecatcher 
-xinstall geany 
-xinstall geany-plugin* 
 
 # ------------------------------------------------------------------------------
 # DESKTOP
 
-echo -e "${GR}  Desktop...${NC}"
+#echo -e "${GR}  Desktop...${NC}"
 
 
 # ------------------------------------------------------------------------------
@@ -695,9 +677,7 @@ xdg-mime default shotwell-viewer.desktop image/raw
 xinstall openshot 
 xinstall dia-gnome 
 xinstall inkscape 
-xinstall blender 
-xinstall blender-data 
-xinstall glabels
+
 
 # ------------------------------------------------------------------------------
 # AUDIO/VIDEO
@@ -710,8 +690,6 @@ xinstall devede
 xinstall audacity 
 xinstall lame  
 xinstall cheese 
-xinstall mplayer 
-xinstall gnome-mplayer 
 xinstall kazam
 
 # ------------------------------------------------------------------------------
@@ -727,35 +705,16 @@ xinstall libreoffice-pdfimport
 xinstall libreoffice-nlpsolver
 xinstall libreoffice-gtk
 
-if [ "$LANGUAGE" == "fr_FR" ]; then
-  xinstall libreoffice-l10n-fr 
-  xinstall libreoffice-help-fr 
-  xinstall hyphen-fr 
-  # get the latest version by parsing telecharger.php
-  wget -q "http://www.dicollecte.org/grammalecte/telecharger.php" & spinner $!
-  GOXTURL=$(grep "http://www.dicollecte.org/grammalecte/oxt/Grammalecte-fr" < telecharger.php | cut -f4 -d '"')
-  GOXT=G$(echo "$GOXTURL" | cut -f2 -d 'G')
-  wget -q "$GOXTURL"  & spinner $!
-  unopkg add --shared -f "$GOXT"
-fi
-
 # ------------------------------------------------------------------------------
 # GAMES
 
-echo -e "${GR}  Games...${NC}"
+#echo -e "${GR}  Games...${NC}"
 
-xinstall frozen-bubble 
-xinstall pysolfc 
-xinstall mahjongg 
-xinstall aisleriot 
-xinstall pingus 
-
-# ------------------------------------------------------------------------------
-# EDUCATION
-
-echo -e "${GR}  Education...${NC}"
-
-xinstall stellarium
+#xinstall frozen-bubble 
+#xinstall pysolfc 
+#xinstall mahjongg 
+#xinstall aisleriot 
+#xinstall pingus 
 
 # ------------------------------------------------------------------------------
 # INTERNET
@@ -763,7 +722,8 @@ xinstall stellarium
 echo -e "${GR}  Internet...${NC}"
 
 xinstall deluge-torrent
-xinstall filezilla  
+xinstall filezilla
+xinstall corebird
 
 if [ "$ARCH" == "x86_64" ]; then
   xinstall google-chrome-stable 
@@ -881,30 +841,30 @@ fi
 # ------------------------------------------------------------------------------
 # Numix
 
-if [ "$INSTNUMIX" == "1" ]; then
-echo "   installing Numix theme"
-xinstall numix-gtk-theme - Numix GTK Theme
-xinstall numix-icon-theme - Numix icon theme
-xinstall numix-icon-theme-circle - Numix Circle icons
-xinstall numix-folders - Numix Folders
-# we can't use xfconf-query as we are root
-cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xsettings" version="1.0">
-  <property name="Net" type="empty">
-    <property name="ThemeName" type="string" value="Numix"/>
-    <property name="IconThemeName" type="string" value="Numix-Circle"/>
-  </property>
-</channel>
-EOF
-cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfwm4" version="1.0">
-  <property name="theme" type="string" value="Numix"/>
-  </property>
-</channel>
-EOF
-fi
+# if [ "$INSTNUMIX" == "1" ]; then
+# echo "   installing Numix theme"
+# xinstall numix-gtk-theme - Numix GTK Theme
+# xinstall numix-icon-theme - Numix icon theme
+# xinstall numix-icon-theme-circle - Numix Circle icons
+# xinstall numix-folders - Numix Folders
+# # we can't use xfconf-query as we are root
+# cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
+# <?xml version="1.0" encoding="UTF-8"?>
+# <channel name="xsettings" version="1.0">
+#   <property name="Net" type="empty">
+#     <property name="ThemeName" type="string" value="Numix"/>
+#     <property name="IconThemeName" type="string" value="Numix-Circle"/>
+#   </property>
+# </channel>
+# EOF
+# cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
+# <?xml version="1.0" encoding="UTF-8"?>
+# <channel name="xfwm4" version="1.0">
+#   <property name="theme" type="string" value="Numix"/>
+#   </property>
+# </channel>
+# EOF
+# fi
 
 # ------------------------------------------------------------------------------
 # Sublime Text 3
@@ -945,6 +905,12 @@ if [ "$INSTUBLOCK" == "1" ]; then
   wget -q https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/addon-607454-latest.xpi >> xupdate.log 2>&1 & spinner $!
   install_addon addon-607454-latest.xpi "$EXTENSIONS_SYSTEM" >> xupdate.log 2>&1
 fi
+
+# ------------------------------------------------------------------------------
+# Flux
+
+echo "   installing Flux"
+xinstall fluxgui
 
 # ------------------------------------------------------------------------------
 # FRANZ a free messaging app.
@@ -1026,6 +992,20 @@ if [ "$INSTMEGA" == "1" ]; then
 fi
 
 # ------------------------------------------------------------------------------
+# MariaDB
+
+echo "   installing MariaDB & MySQL Workbench"
+xinstall mariadb-server
+xinstall libmariadbd-dev
+xinstall mysql-workbench
+
+# ------------------------------------------------------------------------------
+# Terminix
+
+echo "   installing Terminix"
+xinstall terminix
+
+# ------------------------------------------------------------------------------
 # LOCAL FILES
 
 # Install extra fonts
@@ -1051,11 +1031,11 @@ for d in /usr/share/icons/*; do gtk-update-icon-cache -f -q "$d" >> xupdate.log 
 # ------------------------------------------------------------------------------
 # add default desktop launchers
 
-echo "### Install desktop launchers." >> xupdate.log
-echo -e "${GR}Install default desktop launchers...${NC}"
-cp /usr/share/applications/firefox.desktop "$DESKTOP" 2>> xupdate.log
-cp /usr/share/applications/libreoffice-startcenter.desktop "$DESKTOP" 2>> xupdate.log
-chmod -f 775 "$DESKTOP/*.desktop"
+#echo "### Install desktop launchers." >> xupdate.log
+#echo -e "${GR}Install default desktop launchers...${NC}"
+#cp /usr/share/applications/firefox.desktop "$DESKTOP" 2>> xupdate.log
+#cp /usr/share/applications/libreoffice-startcenter.desktop "$DESKTOP" 2>> xupdate.log
+#chmod -f 775 "$DESKTOP/*.desktop"
 
 echo -e "${GR}Cleaning up...${NC}"
 
