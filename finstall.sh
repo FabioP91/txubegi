@@ -8,9 +8,9 @@
 #
 # ------------------------------------------------------------------------------
 # INSTALLATION
-# cd to the folder that contains this script (xupdate.sh)
-# make the script executable with: chmod +x xupdate.sh
-# then run sudo ./xupdate.sh
+# cd to the folder that contains this script (finstall.sh)
+# make the script executable with: chmod +x finstall.sh
+# then run sudo ./finstall.sh
 #
 # ------------------------------------------------------------------------------
 # Copyright 2017 Philip Wittamore http://www.wittamore.com
@@ -131,7 +131,7 @@ options=(1 "Skype - proprietary messaging application" off \
          8 "Pipelight - Silverlight plugin (security risk)" off \
          9 "Sublime Text - sophisticated text editor" off \
          10 "Numix theme - make your desktop beautiful" off \
-         11 "Plank - MacOs-like desktop menu" off)
+         11 "Plank - MacOs-like desktop menu" off \
          12 "Ublock Origin - advert blocker for Firefox" off)
 
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -233,7 +233,7 @@ add-apt-repository ppa:nathan-renniewaldock/flux -y >> xupdate.log 2>&1 & spinne
 # MariaDB
 echo -e "${BL}     MariaDB repository...${NC}"
 apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
-add-apt-repository -y 'deb [arch=amd64,i386,ppc64el] http://mirrors.coreix.net/mariadb/repo/10.1/ubuntu xenial main'
+add-apt-repository -y 'deb [arch=amd64,i386,ppc64el] http://mirrors.coreix.net/mariadb/repo/10.1/ubuntu xenial main' 
 
 # Terminix
 echo -e "${BL}     Terminix repository...${NC}"
