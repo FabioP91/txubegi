@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# xupdate.sh version 0.8.3
-# lun. 23 janv. 2017 11:50:08 CET
+# xupdate.sh version 0.8.F
+# Sunday. 18 April. 2017
 #
 # POST INSTALLATION SCRIPT FOR XUBUNTU 16.04 LTS
-# CREDITS: Internet
+# CREDITS: Internet, Dean Perry https://deanpcmad.com, Philip Wittamore
 #
 # ------------------------------------------------------------------------------
 # INSTALLATION
@@ -131,7 +131,7 @@ options=(1 "Skype - proprietary messaging application" off \
          8 "Pipelight - Silverlight plugin (security risk)" off \
          9 "Sublime Text - sophisticated text editor" off \
          10 "Numix theme - make your desktop beautiful" off \
-         11 "Plank - MacOs-like desktop menu" off \
+         11 "Plank - MacOs-like desktop menu" off)
          12 "Ublock Origin - advert blocker for Firefox" off)
 
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -209,6 +209,10 @@ mkdir -p "/home/$XUSER/.local/share/applications"
 
 echo -e "${GR}Adding repositories...${NC}"
 
+# Enable Multiverse
+echo -e "${BL}     Multiverse repository...${NC}"
+add-apt-repository multiverse -y  >> xupdate.log 2>&1 & spinner $!
+
 # Inkscape stable
 echo -e "${BL}     Inkscape repository...${NC}"
 sudo add-apt-repository ppa:inkscape.dev/stable
@@ -217,12 +221,23 @@ sudo add-apt-repository ppa:inkscape.dev/stable
 echo -e "${BL}     Libreoffice repository...${NC}"
 add-apt-repository ppa:libreoffice/ppa -y  >> xupdate.log 2>&1 & spinner $!
 
-# Google Chrome (not supported on 32bit)
-if [ "$ARCH" == "x86_64" ]; then
-  echo -e "${BL}     Google repository...${NC}"
-  wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - & spinner $!
-  echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-fi
+# Google Chrome
+echo -e "${BL}     Google repository...${NC}"
+wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - & spinner $!
+echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+
+# F.Lux
+echo -e "${BL}     Flux repository...${NC}"
+add-apt-repository ppa:nathan-renniewaldock/flux -y >> xupdate.log 2>&1 & spinner $!
+
+# MariaDB
+echo -e "${BL}     MariaDB repository...${NC}"
+apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+add-apt-repository -y 'deb [arch=amd64,i386,ppc64el] http://mirrors.coreix.net/mariadb/repo/10.1/ubuntu xenial main'
+
+# Terminix
+echo -e "${BL}     Terminix repository...${NC}"
+add-apt-repository ppa:webupd8team/terminix -y >> xupdate.log 2>&1 & spinner $!
 
 # Linrunner - supercedes laptop-tools and is indispensable on laptops
 if [ "$LAPTOP" == "0" ]; then
@@ -257,16 +272,6 @@ if [ "$INSTSPOTIFY" == "1" ]; then
   gpg --export --armor BBEBDCB318AD50EC6865090613B00F1FD2C19886 | apt-key add - 
   echo "deb http://repository.spotify.com stable non-free"  > /etc/apt/sources.list.d/spotify.list
 fi
-
-echo -e "${BL}     Flux repository...${NC}"
-add-apt-repository ppa:nathan-renniewaldock/flux -y >> xupdate.log 2>&1 & spinner $!
-
-echo -e "${BL}     MariaDB repository...${NC}"
-apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
-add-apt-repository -y 'deb [arch=amd64,i386,ppc64el] http://mirrors.coreix.net/mariadb/repo/10.1/ubuntu xenial main'
-
-echo -e "${BL}     Terminix repository...${NC}"
-add-apt-repository ppa:webupd8team/terminix -y >> xupdate.log 2>&1 & spinner $!
 
 # ------------------------------------------------------------------------------
 # REMOVE
@@ -338,12 +343,6 @@ if [ "$SSD" == "0" ]; then
   if [ -f "/etc/preload.conf" ]; then
     sed -i -e "s/sortstrategy = 3/sortstrategy = 0/g" /etc/preload.conf
   fi
-  # fstab - keep tmp folder and logs in ram (desktop only)
-  {
-  echo 'tmpfs /tmp     tmpfs defaults,noexec,nosuid,noatime,size=20% 0 0'
-  echo 'tmpfs /var/log tmpfs defaults,noexec,nosuid,noatime,mode=0755,size=20% 0 0'
-  echo ' ' 
-  } >> /etc/fstab
   # fstrim is configured weekly by default
   # grub
   FIND="GRUB_CMDLINE_LINUX_DEFAULT=\x22quiet splash\x22"
@@ -559,7 +558,7 @@ xinstall gdebi
 xinstall gksu 
 xinstall psensor 
 xinstall fancontrol 
-xinstall indicator-cpufreq 
+#xinstall indicator-cpufreq 
 xinstall smartmontools 
 xinstall gsmartcontrol 
 xinstall gnome-search-tool
@@ -572,6 +571,7 @@ xinstall deja-dup
 xinstall inxi
 #xinstall keepassx
 xinstall cowsay
+xinstall zsh
 xinstall htop
 xinstall nano
 
@@ -642,7 +642,6 @@ xinstall gedit-plugins
 xinstall gedit-developer-plugins  
 xinstall deja-dup 
 xinstall xpdf
-xinstall brasero 
 
 # ------------------------------------------------------------------------------
 # DESKTOP
@@ -708,13 +707,20 @@ xinstall libreoffice-gtk
 # ------------------------------------------------------------------------------
 # GAMES
 
-#echo -e "${GR}  Games...${NC}"
+echo -e "${GR}  Games...${NC}"
 
-#xinstall frozen-bubble 
-#xinstall pysolfc 
-#xinstall mahjongg 
-#xinstall aisleriot 
-#xinstall pingus 
+xinstall frozen-bubble 
+xinstall pysolfc 
+xinstall mahjongg 
+xinstall aisleriot 
+xinstall pingus
+
+# ------------------------------------------------------------------------------
+# EDUCATION
+			
+echo -e "${GR}  Education...${NC}"
+
+xinstall stellarium
 
 # ------------------------------------------------------------------------------
 # INTERNET
@@ -724,10 +730,7 @@ echo -e "${GR}  Internet...${NC}"
 xinstall deluge-torrent
 xinstall filezilla
 xinstall corebird
-
-if [ "$ARCH" == "x86_64" ]; then
-  xinstall google-chrome-stable 
-fi
+xinstall google-chrome-stable 
 
 # ------------------------------------------------------------------------------
 # clean up
@@ -841,30 +844,30 @@ fi
 # ------------------------------------------------------------------------------
 # Numix
 
-# if [ "$INSTNUMIX" == "1" ]; then
-# echo "   installing Numix theme"
-# xinstall numix-gtk-theme - Numix GTK Theme
-# xinstall numix-icon-theme - Numix icon theme
-# xinstall numix-icon-theme-circle - Numix Circle icons
-# xinstall numix-folders - Numix Folders
-# # we can't use xfconf-query as we are root
-# cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
-# <?xml version="1.0" encoding="UTF-8"?>
-# <channel name="xsettings" version="1.0">
-#   <property name="Net" type="empty">
-#     <property name="ThemeName" type="string" value="Numix"/>
-#     <property name="IconThemeName" type="string" value="Numix-Circle"/>
-#   </property>
-# </channel>
-# EOF
-# cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
-# <?xml version="1.0" encoding="UTF-8"?>
-# <channel name="xfwm4" version="1.0">
-#   <property name="theme" type="string" value="Numix"/>
-#   </property>
-# </channel>
-# EOF
-# fi
+if [ "$INSTNUMIX" == "1" ]; then
+echo "   installing Numix theme"
+xinstall numix-gtk-theme - Numix GTK Theme
+xinstall numix-icon-theme - Numix icon theme
+xinstall numix-icon-theme-circle - Numix Circle icons
+xinstall numix-folders - Numix Folders
+# we can't use xfconf-query as we are root
+cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xsettings" version="1.0">
+  <property name="Net" type="empty">
+    <property name="ThemeName" type="string" value="Numix"/>
+    <property name="IconThemeName" type="string" value="Numix-Circle"/>
+  </property>
+</channel>
+EOF
+cat <<EOF > "/home/$XUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfwm4" version="1.0">
+  <property name="theme" type="string" value="Numix"/>
+  </property>
+</channel>
+EOF
+fi
 
 # ------------------------------------------------------------------------------
 # Sublime Text 3
@@ -922,13 +925,8 @@ if [ "$INSTFRANZ" == "1" ]; then
 # get latest version by parsing latest download page
 mkdir -p /opt/franz
 wget https://github.com/meetfranz/franz-app/releases/latest
-if [ "$ARCH" == "x86_64" ]; then
-  FRZ64=$( grep Franz-linux-x64 < latest | grep meetfranz | cut -f2 -d '"')
-  wget -qO- "https://github.com$FRZ64" | tar zxf - -C /opt/franz/  & spinner $!
-else
-  FRZ32=$( grep Franz-linux-ia32 < latest | grep meetfranz | cut -f2 -d '"')
-  wget -qO- "https://github.com/meetfranz$FRZ32" | tar zxf - -C /opt/franz/
-fi
+FRZ64=$( grep Franz-linux-x64 < latest | grep meetfranz | cut -f2 -d '"')
+wget -qO- "https://github.com$FRZ64" | tar zxf - -C /opt/franz/  & spinner $!
 wget -q https://cdn-images-1.medium.com/max/360/1*v86tTomtFZIdqzMNpvwIZw.png -O /opt/franz/franz-icon.png 
 # add desktop entry
 cat <<EOF > "/usr/share/applications/franz.desktop"                                                                 
@@ -949,7 +947,6 @@ Type=Application
 X-GNOME-Autostart-enabled=true
 EOF
 chmod 644 "/home/$XUSER/.config/autostart/franz.desktop"
-fi
 
 # ------------------------------------------------------------------------------
 # MOLOTOV French TV online viewer (only works in France)
@@ -1004,6 +1001,12 @@ xinstall mysql-workbench
 
 echo "   installing Terminix"
 xinstall terminix
+
+# ------------------------------------------------------------------------------		
+# clean up		
+			
+echo -e "${GR}Cleaning up...${NC}"					
+apt-get install -f -y >> xupdate.log 2>&1
 
 # ------------------------------------------------------------------------------
 # LOCAL FILES
